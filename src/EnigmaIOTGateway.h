@@ -399,6 +399,12 @@ protected:
 	*/
 	bool loadFlashData ();
 
+	/**
+	 * 
+	 *
+	 */
+	 void setGwConfigData(uint8_t channel, const char* networkKey, const char* networkName);
+
    /**
 	* @brief Saves configuration to flash memory
 	* @return Returns `true` if data could be written successfuly. `false` otherwise
@@ -470,6 +476,11 @@ public:
 	 * @param useDataCounter Indicates if a counter is going to be added to every message data to check message sequence. `true` by default
 	 */
 	void begin (Comms_halClass* comm, uint8_t* networkKey = NULL, bool useDataCounter = true);
+
+	/**
+	 * 
+	 */
+	void begin(Comms_halClass* comm, char* networkName, uint8_t* networkKey, uint8_t channel, bool useDataCounter);
 
 	/**
 	 * @brief This method should be called periodically for instance inside `loop()` function.

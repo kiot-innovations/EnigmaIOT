@@ -509,6 +509,11 @@ public:
 	void begin (Comms_halClass* comm, uint8_t* gateway = NULL, uint8_t* networkKey = NULL, bool useCounter = true, bool sleepy = true);
 
 	/**
+	 * 
+	 * */
+	void begin (Comms_halClass* comm, const char* networkName, uint8_t* networkKey, const char* nodeName, bool useCounter, bool sleepy);
+
+	/**
 	  * @brief Stops EnigmaIoT protocol
 	  */
 	void stop ();

@@ -672,6 +672,72 @@ void EnigmaIOTNodeClass::checkResetButton () {
 	}
 }
 
+void EnigmaIOTNodeClass::begin (Comms_halClass* comm, const char* networkName, uint8_t* networkKey, const char* nodeName, bool useCounter, bool sleepy){
+	cycleStartedTime = 0; // Calculate time from start
+		pinMode (led, OUTPUT);
+	#ifdef ESP8266
+		ets_timer_setfn (&ledTimer, flashLed, (void*)&led);
+	#endif
+	localLed = led;
+
+	checkResetButton ();
+
+	// startFlash (100); // Do not flash during setup for less battery drain
+
+	digitalWrite (led, LED_OFF);
+
+	this->comm = comm;
+
+	this->useCounter = useCounter;
+
+	node.setInitAsSleepy (sleepy);
+	node.setSleepy (sleepy);
+	DEBUG_DBG ("Set %s mode: %s", node.getSleepy () ? "sleepy" : "non sleepy", sleepy ? "sleepy" : "non sleepy");
+
+	DEBUG_DBG ("EnigmaIot started with config data con begin() call");
+	memcpy (rtcmem_data.networkName, networkName, NETWORK_NAME_LENGTH);
+	strncpy ((char *)rtcmem_data.networkKey, (const char *)networkKey, KEY_LENGTH);          // setNetworkKey
+	DEBUG_DBG("PT1: Got Network Key: %s ", printHexBuffer(rtcmem_data.networkKey, 24));
+	CryptModule::getSHA256 (rtcmem_data.networkKey, KEY_LENGTH);
+	rtcmem_data.nodeKeyValid = false;
+	DEBUG_DBG("PT2: Got Network Key: %s ", printHexBuffer(rtcmem_data.networkKey, 24));
+
+	memcpy ((char*)rtcmem_data.nodeName, nodeName, NODE_NAME_LENGTH);
+	node.setNodeName (rtcmem_data.nodeName);
+
+	//rtcmem_data.channel = channel;
+	rtcmem_data.sleepy = sleepy;
+	rtcmem_data.nodeRegisterStatus = UNREGISTERED;
+	if (searchForGateway (&rtcmem_data), true) {
+			DEBUG_DBG ("Found gateway. Storing");
+			rtcmem_data.commErrors = 0;
+	}
+
+	// TODO: Here Channel may not be present. So it is risky to call initWifi without a known channel
+	initWiFi (rtcmem_data.channel, rtcmem_data.networkName);
+	comm->begin (rtcmem_data.gateway, rtcmem_data.channel);
+	comm->onDataRcvd (rx_cb);
+	comm->onDataSent (tx_cb);
+
+#ifdef ESP8266
+	wifi_set_channel (rtcmem_data.channel);
+#elif defined ESP32
+	esp_err_t err_ok;
+	if ((err_ok = esp_wifi_set_promiscuous (true))) {
+		DEBUG_ERROR ("Error setting promiscuous mode: %s", esp_err_to_name (err_ok));
+	}
+	if ((err_ok = esp_wifi_set_channel (rtcmem_data.channel, WIFI_SECOND_CHAN_NONE))) {
+		DEBUG_ERROR ("Error setting wifi channel: %s", esp_err_to_name (err_ok));
+	}
+	if ((err_ok = esp_wifi_set_promiscuous (false))) {
+		DEBUG_ERROR ("Error setting promiscuous mode off: %s", esp_err_to_name (err_ok));
+	}
+#endif
+
+	DEBUG_DBG ("Comms started. Channel %u", rtcmem_data.channel);
+		
+}
+
 void EnigmaIOTNodeClass::begin (Comms_halClass* comm, uint8_t* gateway, uint8_t* networkKey, bool useCounter, bool sleepy) {
 	cycleStartedTime = 0; // Calculate time from start
 	pinMode (led, OUTPUT);
@@ -710,6 +776,11 @@ void EnigmaIOTNodeClass::begin (Comms_halClass* comm, uint8_t* gateway, uint8_t*
 			//rtcmem_data.channel = channel;
 			rtcmem_data.sleepy = sleepy;
 			rtcmem_data.nodeRegisterStatus = UNREGISTERED;
+			DEBUG_DBG("Gateway: ", rtcmem_data.gateway);
+			if (searchForGateway (&rtcmem_data), true) {
+					DEBUG_DBG ("Found gateway. Storing");
+					rtcmem_data.commErrors = 0;
+			}
 		} else { // Try read from flash
 			DEBUG_INFO ("Starting from Flash");
 			if (!SPIFFS.begin ()) {
@@ -1238,6 +1309,7 @@ bool EnigmaIOTNodeClass::clientHello () {
 		DEBUG_ERROR ("Error during encryption");
 		return false;
 	}
+	DEBUG_VERBOSE("Encrypt Key: %s ", printHexBuffer(rtcmem_data.networkKey, KEY_LENGTH - AAD_LENGTH));
 
 	DEBUG_VERBOSE ("Encrypted Client Hello message: %s", printHexBuffer ((uint8_t*)&clientHello_msg, CHMSG_LEN));
 
