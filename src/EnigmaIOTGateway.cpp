@@ -594,6 +594,14 @@ bool EnigmaIOTGatewayClass::configWiFiManager () {
 	return result;
 }
 
+void EnigmaIOTGatewayClass::setGwConfigData(uint8_t channel, const char* networkKey, const char* networkName){
+	gwConfig.channel = channel;
+	strncpy ((char*)gwConfig.networkKey, networkKey, strlen(networkKey));
+	strncpy (gwConfig.networkName, networkName, strlen(networkName));
+	strncpy (plainNetKey, (char*)gwConfig.networkKey, KEY_LENGTH);
+	return;
+}
+
 bool EnigmaIOTGatewayClass::loadFlashData () {
 	//SPIFFS.remove (CONFIG_FILE); // Only for testing
 	bool json_correct = false;
@@ -706,6 +714,35 @@ bool EnigmaIOTGatewayClass::saveFlashData () {
 
 	DEBUG_DBG ("Gateway configuration saved to flash. %u bytes", size);
 	return true;
+}
+
+void EnigmaIOTGatewayClass::begin(Comms_halClass* comm, char* networkName, uint8_t* networkKey, uint8_t channel, bool useDataCounter){
+	this->input_queue = new EnigmaIOTRingBuffer<msg_queue_item_t> (MAX_INPUT_QUEUE_SIZE);
+	this->comm = comm;
+	this->useCounter = useDataCounter;
+
+	uint8_t broadcastKey[KEY_LENGTH];
+	nodelist.initBroadcastNode ();
+	CryptModule::random (broadcastKey, KEY_LENGTH); // Generate random broadcast key
+	DEBUG_DBG ("Broadcast key: %s", printHexBuffer (broadcastKey, KEY_LENGTH));
+	nodelist.getBroadcastNode ()->setEncryptionKey (broadcastKey);
+
+	gwConfig.channel = channel;
+	strncpy ((char*)gwConfig.networkKey, (const char *)networkKey, KEY_LENGTH);
+	strncpy (gwConfig.networkName, networkName, strlen(networkName));
+	strncpy (plainNetKey, (char*)gwConfig.networkKey, KEY_LENGTH);
+
+	CryptModule::getSHA256 (gwConfig.networkKey, KEY_LENGTH);
+	DEBUG_VERBOSE ("Raw Network key: %s", printHexBuffer (gwConfig.networkKey, KEY_LENGTH));
+
+
+	initWiFi (gwConfig.channel, gwConfig.networkName, plainNetKey, COMM_GATEWAY);
+	comm->begin (NULL, gwConfig.channel, COMM_GATEWAY);
+	comm->onDataRcvd (rx_cb);
+	comm->onDataSent (tx_cb);
+
+	GwAPI.begin ();
+
 }
 
 void EnigmaIOTGatewayClass::begin (Comms_halClass* comm, uint8_t* networkKey, bool useDataCounter) {

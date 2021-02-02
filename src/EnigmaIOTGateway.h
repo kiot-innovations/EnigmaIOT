@@ -399,6 +399,14 @@ protected:
 	*/
 	bool loadFlashData ();
 
+	/**
+	 * @brief set variables of gwConfig Object manually
+	 * @param channel channel in gwConfig_t
+	 * @param networkKey networkKey in gwConfig_t
+	 * @param networkName networkName in gwConfig_t
+	 */
+	 void setGwConfigData(uint8_t channel, const char* networkKey, const char* networkName);
+
    /**
 	* @brief Saves configuration to flash memory
 	* @return Returns `true` if data could be written successfuly. `false` otherwise
@@ -470,6 +478,15 @@ public:
 	 * @param useDataCounter Indicates if a counter is going to be added to every message data to check message sequence. `true` by default
 	 */
 	void begin (Comms_halClass* comm, uint8_t* networkKey = NULL, bool useDataCounter = true);
+
+	/**
+	 * @brief Initalizes communication basic data and starts accepting node registration
+	 * @param comm Physical layer to be used on this network
+	 * @param networkName Network name to take from user, instead of AsynWifiManager
+	 * @param networkKey Network key to protect shared key agreement
+	 * @param useDataCounter Indicates if a counter is going to be added to every message data to check message sequence. `true` by default
+	 */
+	void begin(Comms_halClass* comm, char* networkName, uint8_t* networkKey, uint8_t channel, bool useDataCounter);
 
 	/**
 	 * @brief This method should be called periodically for instance inside `loop()` function.

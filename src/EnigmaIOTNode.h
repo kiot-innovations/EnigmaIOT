@@ -509,6 +509,22 @@ public:
 	void begin (Comms_halClass* comm, uint8_t* gateway = NULL, uint8_t* networkKey = NULL, bool useCounter = true, bool sleepy = true);
 
 	/**
+	  * @brief Initalizes communication basic data and starts node registration
+	  * @param comm Physical layer to be used on this node network
+	  * @param gateway Gateway address
+	  * @param networkname Network name given by user, overrides AsynWifiManager
+	  * @param networkKey Network key to protect shared key agreement
+	  * @param useCounter Indicates if a counter has to be added to every message data to check message sequence. `true` by default
+	  * @param sleepy Indicates if this node changes to low energy mode (sleep mode) after sending a data message. `true` by default
+	  *
+	  * This condition is signalled to Gateway during registration so that downlink messages are managed diferently.
+	  * On non sleepy nodes a downlink data message can be sent on any moment as node will be always awake. But for nodes that sleep,
+	  * normally those that are powered with batteries, downlink message will be queued on gateway and sent just after an uplink data
+	  * message from node has been sent
+	 * */
+	void begin (Comms_halClass* comm, const char* networkName, uint8_t* networkKey, const char* nodeName, bool useCounter, bool sleepy);
+
+	/**
 	  * @brief Stops EnigmaIoT protocol
 	  */
 	void stop ();
