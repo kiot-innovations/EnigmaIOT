@@ -321,13 +321,6 @@ public:
       */
     void printToSerial (Stream *port = &Serial);
 
-      /**
-      * @brief Get MAC address of nth node in the list
-      * @param index index of the node 
-      * @param buffer to fill in MAC address
-      */
-    bool getMacfromIndex(uint16_t index, char* buffer);
-
     /**
       * @brief Resets all node fields to a default initial and not registered state
       */
@@ -608,6 +601,13 @@ public:
     void incLastBroadcastMsgCounter () {
         lastBroadcastMsgCounter++;
     }
+
+    /**
+     * @brief Get MAC address of nth node in the list
+     * @param index index of the node 
+     * @param buffer to fill in MAC address
+     */
+    bool getMacfromIndex(uint16_t index, char* buffer);
 
 protected:
     Node nodes[NUM_NODES]; ///< @brief Static Node array that holds maximum number of supported nodes 
