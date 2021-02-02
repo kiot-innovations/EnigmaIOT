@@ -344,3 +344,17 @@ void NodeList::printToSerial (Stream* port) {
 		}
 	}
 }
+
+bool NodeList::getMacfromIndex(uint16_t index, char* buffer) {
+	int c = 0;
+	for(int i=0; i< NUM_NODES; i++) {
+		if (nodes[i].status != UNREGISTERED) {
+			if(c == index){
+				mac2str((const uint8_t*)nodes[i].getMacAddress(), buffer);
+				return true;
+			}
+			c++;
+		}
+	}
+	return false;
+}
